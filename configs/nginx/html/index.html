@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nível de Água</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            text-align: center;
+        }
+        #status {
+            font-size: 1.5rem;
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            display: inline-block;
+        }
+        .normal {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .alto {
+            background-color: #FF5722;
+            color: white;
+        }
+        .problema {
+            background-color: #f44336;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>Monitoramento do Nível de Água</h1>
+    <div id="status" class="problema">Carregando status...</div>
+    <div id="last-update"></div>
+
+    <script>
+        const apiUrl = 'https://renewing-fly-neatly.ngrok-free.app/registros/?format=json';
+        const statusDiv = document.getElementById('status');
+        const lastUpdateDiv = document.getElementById('last-update');
+
+        function atualizarStatus() {
+            fetch(apiUrl, {
+                headers: {
+                    'Accept': 'application/json',
+                    'ngrok-skip-browser-warning': 'true' // Adiciona o cabeçalho para ignorar a tela de aviso
+                }
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Erro na API: ${response.status} - ${response.statusText}`);
+                    }
+                    // Lê o corpo da resposta como texto bruto
+                    return response.text();
+                })
+                .then(data => {
+                    console.log('Resposta completa da API:', data); // Loga a resposta completa no console
+
+                    try {
+                        // Tenta converter para JSON
+                        const sanitizedData = data.trim().replace(/%$/, ''); // Remove caracteres inválidos
+                        const jsonData = JSON.parse(sanitizedData);
+
+                        if (!Array.isArray(jsonData) || jsonData.length === 0) {
+                            throw new Error('Nenhum dado válido retornado pela API.');
+                        }
+
+                        const ultimoRegistro = jsonData[jsonData.length - 1];
+                        const nivel = ultimoRegistro.nivel;
+                        const dataRegistro = new Date(ultimoRegistro.data_registro);
+
+                        const agora = new Date();
+                        const diferencaMinutos = Math.floor((agora - dataRegistro) / 60000);
+
+                        if (diferencaMinutos > 5) {
+                            statusDiv.textContent = 'Mais de 5 minutos sem resposta do arduino, verifique.';
+                            statusDiv.className = 'problema';
+                        } else if (nivel === 'A') {
+                            statusDiv.textContent = 'Nível: Alto';
+                            statusDiv.className = 'alto';
+                        } else if (nivel === 'N') {
+                            statusDiv.textContent = 'Nível: Normal';
+                            statusDiv.className = 'normal';
+                        }
+
+                        lastUpdateDiv.textContent = `Última atualização: ${dataRegistro.toLocaleString()}`;
+                    } catch (error) {
+                        console.error('Erro ao processar a resposta:', error);
+                        statusDiv.textContent = 'Erro ao processar a resposta da API.';
+                        statusDiv.className = 'problema';
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao processar a API:', error);
+                });
+        }
+       // Atualiza a cada 5 minutos
+        setInterval(atualizarStatus, 300000);
+        // Atualiza ao carregar a página
+        atualizarStatus();
+    </script>
+</body>
+</html>
+
