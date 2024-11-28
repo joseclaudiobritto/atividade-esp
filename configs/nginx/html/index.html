@@ -75,7 +75,7 @@
                         const diferencaMinutos = Math.floor((agora - dataRegistro) / 60000);
 
                         if (diferencaMinutos > 5) {
-                            statusDiv.textContent = 'Mais de 5 minutos sem resposta do arduino, verifique.';
+                            statusDiv.textContent = 'Mais de 5 minutos sem resposta do aparelho, verifique.';
                             statusDiv.className = 'problema';
                         } else if (nivel === 'A') {
                             statusDiv.textContent = 'Nível: Alto';
@@ -96,9 +96,7 @@
                     console.error('Erro ao processar a API:', error);
                 });
         }
-       // Atualiza a cada 5 minutos
-        setInterval(atualizarStatus, 300000);
-        // Atualiza ao carregar a página
+        setInterval(atualizarStatus, 100000);
         atualizarStatus();
     </script>
 </body>
